@@ -30,7 +30,7 @@ function ProfileRelationsBox(propriedades) {
           return (
             <li key={itemAtual.id || itemAtual}>
               <a href={`/users/${itemAtual.title || itemAtual.login || itemAtual}`}>
-                <img src={itemAtual.image || itemAtual.avatar_url || `https://github.com/${itemAtual}.png`} />
+                <img src={itemAtual.imageUrl || itemAtual.avatar_url || `https://github.com/${itemAtual}.png`} />
                 <span>{itemAtual.title || itemAtual.login || itemAtual}</span>
               </a>
             </li>
@@ -68,6 +68,27 @@ export default function Home() {
         setSeguidores(respostaCompleta);
         console.log(seguidores);
       })
+    
+    fetch('https://graphql.datocms.com/',{
+      method: 'POST',
+      headers: {
+        'Authorization': '820928306302f780ec2957318c70b2',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({ "query": `query{
+        allCommunities {
+          title
+          id
+          imageUrl
+          creatorSlug
+        }
+      }`})
+    })
+    .then((response) => response.json())
+    .then((respostaCompleta)=>{
+      setComunidades(respostaCompleta.data.allCommunities);
+    })
   }, [])
   return (
     <>
