@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import MainGrid from "../src/components/MainGrid"
 import Box from "../src/components/Box"
 import { AlurakutMenu, AlurakutProfileSidebarMenuDefault, OrkutNostalgicIconSet } from "../src/lib/AlurakutCommons"
@@ -19,24 +19,59 @@ function ProfileSidebar(propriedades) {
     </Box>
   )
 }
+function ProfileRelationsBox(propriedades) {
+  return (
+    <ProfileRelationsBoxWrapper>
+      <h2 className="smallTitle">
+        {propriedades.title} ({propriedades.item.length})
+      </h2>
+      <ul>
+        {propriedades.item.filter((item, idx) => idx < 6).map((itemAtual) => {
+          return (
+            <li key={itemAtual.id || itemAtual}>
+              <a href={`/users/${itemAtual.title || itemAtual.login || itemAtual}`}>
+                <img src={itemAtual.image || itemAtual.avatar_url || `https://github.com/${itemAtual}.png`} />
+                <span>{itemAtual.title || itemAtual.login || itemAtual}</span>
+              </a>
+            </li>
+          )
+        })}
+      </ul>
+    </ProfileRelationsBoxWrapper>
+  )
+}
 
 export default function Home() {
   const usuario = 'gabrielpaiv';
   const [comunidades, setComunidades] = useState([{
     id: '1',
     title: 'Eu odeio acordar cedo',
-    image: 'https://alurakut.vercel.app/capa-comunidade-01.jpg'
+    image: 'https://alurakut.vercel.app/capa-comunidade-01.jpg',
   }]);
-  const pessoasFavoritas = ['juunegreiros',
+  const pessoasFavoritas = [
+    'juunegreiros',
     'peas',
     'omariosouto',
     'rafaballerini',
     'marcobrunodev',
     'felipefialho'
   ];
+
+  const [seguidores, setSeguidores] = useState([]);
+
+  useEffect(function () {
+    fetch('https://api.github.com/users/peas/followers')
+      .then(function (respostaServidor) {
+        return respostaServidor.json();
+      })
+      .then(function (respostaCompleta) {
+        setSeguidores(respostaCompleta);
+        console.log(seguidores);
+      })
+  }, [])
   return (
     <>
-      <AlurakutMenu />
+      <AlurakutMenu githubUser={usuario} />
       <MainGrid>
         <div className="profileArea" style={{ gridArea: 'profileArea' }}>
           <ProfileSidebar githubUser={usuario} />
@@ -50,9 +85,9 @@ export default function Home() {
           </Box>
           <Box>
             <h2 className="subTitle">O que você deseja fazer?</h2>
-            <form onSubmit={ function handleCreateCommunity(e){
+            <form onSubmit={function handleCreateCommunity(e) {
               e.preventDefault();
-              const dadosDoForm= new FormData(e.target);
+              const dadosDoForm = new FormData(e.target);
               const comunidade = {
                 id: new Date().toISOString,
                 title: dadosDoForm.get('title'),
@@ -82,40 +117,18 @@ export default function Home() {
           </Box>
         </div>
         <div className="profileRelationsArea" style={{ gridArea: 'profileRelationsArea' }}>
-          <ProfileRelationsBoxWrapper>
-          <h2 className="smallTitle">
-              Comunidades ({comunidades.length})
-            </h2>
-            <ul>
-              {comunidades.map((itemAtual) => {
-                return (
-                  <li key={itemAtual.id}>
-                    <a href={`/users/${itemAtual.title}`}>
-                      <img src={itemAtual.image} />
-                      <span>{itemAtual.title}</span>
-                    </a>
-                  </li>
-                )
-              })}
-            </ul>
-          </ProfileRelationsBoxWrapper>
-          <ProfileRelationsBoxWrapper>
-            <h2 className="smallTitle">
-              Pessoas da Comunidade ({pessoasFavoritas.length})
-            </h2>
-            <ul>
-              {pessoasFavoritas.map((itemAtual) => {
-                return (
-                  <li key={itemAtual}>
-                    <a href={`/users/${itemAtual}`} >
-                      <img src={`https://github.com/${itemAtual}.png`} />
-                      <span>{itemAtual}</span>
-                    </a>
-                  </li>
-                )
-              })}
-            </ul>
-          </ProfileRelationsBoxWrapper>
+          <ProfileRelationsBox
+            title={'Seguidores'}
+            item={seguidores}
+          />
+          <ProfileRelationsBox
+            title={'Comunidades'}
+            item={comunidades}
+          />
+          <ProfileRelationsBox
+            title={'Pessoas da Comunidade'}
+            item={pessoasFavoritas}
+          />
         </div>
       </MainGrid>
     </>
