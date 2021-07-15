@@ -43,11 +43,7 @@ function ProfileRelationsBox(propriedades) {
 
 export default function Home() {
   const usuario = 'gabrielpaiv';
-  const [comunidades, setComunidades] = useState([{
-    id: '1',
-    title: 'Eu odeio acordar cedo',
-    image: 'https://alurakut.vercel.app/capa-comunidade-01.jpg',
-  }]);
+  const [comunidades, setComunidades] = useState([]);
   const pessoasFavoritas = [
     'juunegreiros',
     'peas',
@@ -68,15 +64,16 @@ export default function Home() {
         setSeguidores(respostaCompleta);
         console.log(seguidores);
       })
-    
-    fetch('https://graphql.datocms.com/',{
+
+    fetch('https://graphql.datocms.com/', {
       method: 'POST',
       headers: {
         'Authorization': '820928306302f780ec2957318c70b2',
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      body: JSON.stringify({ "query": `query{
+      body: JSON.stringify({
+        "query": `query{
         allCommunities {
           title
           id
@@ -85,10 +82,10 @@ export default function Home() {
         }
       }`})
     })
-    .then((response) => response.json())
-    .then((respostaCompleta)=>{
-      setComunidades(respostaCompleta.data.allCommunities);
-    })
+      .then((response) => response.json())
+      .then((respostaCompleta) => {
+        setComunidades(respostaCompleta.data.allCommunities);
+      })
   }, [])
   return (
     <>
@@ -110,11 +107,20 @@ export default function Home() {
               e.preventDefault();
               const dadosDoForm = new FormData(e.target);
               const comunidade = {
-                id: new Date().toISOString,
                 title: dadosDoForm.get('title'),
-                image: dadosDoForm.get('image'),
+                imageUrl: dadosDoForm.get('image'),
+                creatorSlug: usuario,
               }
-              setComunidades([...comunidades, comunidade]);
+              fetch('/api/comunidades', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(comunidade)
+              }).then(async (response) => {
+                const dados = await response.json();
+                setComunidades([...comunidades, comunidade]);
+              })
             }}>
               <div>
                 <input
