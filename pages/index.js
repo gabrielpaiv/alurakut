@@ -1,8 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import MainGrid from "../src/components/MainGrid"
-import Box from "../src/components/Box"
-import { AlurakutMenu, AlurakutProfileSidebarMenuDefault, OrkutNostalgicIconSet } from "../src/lib/AlurakutCommons"
+
+import MainGrid from "../src/components/MainGrid";
+import Box from "../src/components/Box";
+import { AlurakutMenu, AlurakutProfileSidebarMenuDefault, OrkutNostalgicIconSet } from "../src/lib/AlurakutCommons";
 import { ProfileRelationsBoxWrapper } from "../src/components/ProfileRelations";
+
+import jwt from 'jsonwebtoken';
+import nookies from 'nookies';
+
+const { READ_ONLY_TOKEN } = process.env;
 
 function ProfileSidebar(propriedades) {
   return (
@@ -29,9 +35,9 @@ function ProfileRelationsBox(propriedades) {
         {propriedades.item.filter((item, idx) => idx < 6).map((itemAtual) => {
           return (
             <li key={itemAtual.id || itemAtual}>
-              <a href={`/users/${itemAtual.title || itemAtual.login || itemAtual}`}>
-                <img src={itemAtual.imageUrl || itemAtual.avatar_url || `https://github.com/${itemAtual}.png`} />
-                <span>{itemAtual.title || itemAtual.login || itemAtual}</span>
+              <a href={`/users/${itemAtual.title || itemAtual.login}`}>
+                <img src={itemAtual.imageUrl || itemAtual.avatar_url} />
+                <span>{itemAtual.title || itemAtual.login}</span>
               </a>
             </li>
           )
@@ -41,34 +47,44 @@ function ProfileRelationsBox(propriedades) {
   )
 }
 
-export default function Home() {
-  const usuario = 'gabrielpaiv';
+export default function Home(props) {
+  const usuario = props.githubUser;
   const [comunidades, setComunidades] = useState([]);
-  const pessoasFavoritas = [
-    'juunegreiros',
-    'peas',
-    'omariosouto',
-    'rafaballerini',
-    'marcobrunodev',
-    'felipefialho'
-  ];
 
+  const [userProps, setUserProps] = useState([])
   const [seguidores, setSeguidores] = useState([]);
+  const [seguindo, setSeguindo] = useState([]);
+  const [primeiroNome, setPrimeiroNome] = useState('');
 
   useEffect(function () {
-    fetch('https://api.github.com/users/peas/followers')
+    fetch(`https://api.github.com/users/${usuario}/followers`)
       .then(function (respostaServidor) {
         return respostaServidor.json();
       })
       .then(function (respostaCompleta) {
         setSeguidores(respostaCompleta);
-        console.log(seguidores);
+      })
+    fetch(`https://api.github.com/users/${usuario}/following`)
+      .then(function (respostaServidor) {
+        return respostaServidor.json();
+      })
+      .then(function (respostaCompleta) {
+        setSeguindo(respostaCompleta);
+      })
+    fetch(`https://api.github.com/users/${usuario}`)
+      .then(function (respostaServidor) {
+        return respostaServidor.json();
+      })
+      .then(function (respostaCompleta) {
+        setUserProps(respostaCompleta);
+        const nome = respostaCompleta.name;
+        setPrimeiroNome(nome.split(' ')[0]);
       })
 
     fetch('https://graphql.datocms.com/', {
       method: 'POST',
       headers: {
-        'Authorization': '820928306302f780ec2957318c70b2',
+        'Authorization': READ_ONLY_TOKEN,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
@@ -97,8 +113,11 @@ export default function Home() {
         <div className="welcomeArea" style={{ gridArea: 'welcomeArea' }}>
           <Box>
             <h1 className="title">
-              Bem vindo
+              Bem vindo, {primeiroNome}
             </h1>
+            <p>
+              {userProps.bio}
+            </p>
             <OrkutNostalgicIconSet />
           </Box>
           <Box>
@@ -153,11 +172,36 @@ export default function Home() {
             item={comunidades}
           />
           <ProfileRelationsBox
-            title={'Pessoas da Comunidade'}
-            item={pessoasFavoritas}
+            title={'Seguindo'}
+            item={seguindo}
           />
         </div>
       </MainGrid>
     </>
   )
+}
+
+export async function getServerSideProps(context) {
+  const token = nookies.get(context).USER_TOKEN;
+
+  const { isAuthenticated } = await fetch('https://alurakut.vercel.app/api/auth', {
+    headers: {
+      Authorization: token
+    }
+  })
+    .then((resposta) => resposta.json());
+  if (!token) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      }
+    }
+  }
+  const { githubUser } = jwt.decode(token);
+  return {
+    props: {
+      githubUser
+    },
+  }
 }

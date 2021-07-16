@@ -207,7 +207,7 @@ export function AlurakutProfileSidebarMenuDefault() {
       </nav>
       <hr />
       <nav>
-        <a href="/">
+        <a href="https://github.com/trending">
           <img src={`${BASE_URL}/icons/plus.svg`} />
             GitHub Trends
           </a>
